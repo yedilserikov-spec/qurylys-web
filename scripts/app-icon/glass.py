@@ -54,19 +54,16 @@ def render(M, bg=True, n=N):
         alpha = np.maximum(alpha, sh * 0.4)
     # ---- black glass body ----
     body = np.zeros((n, n, 3)) + BLACK
-    body = over(body, (0.16, 0.16, 0.17), np.clip(0.5 - yy, 0, 1) * 0.35)
     H = blur(M, 14 * s)
     gy, gx = np.gradient(H)
     light = np.array([-0.55, -0.85]); light /= np.linalg.norm(light)
     d = -(gx * light[0] + gy * light[1]); d /= np.abs(d).max() + 1e-9
     bev = d * (H < 0.999) * M
-    body = screen(body, (1, 1, 1), np.clip(bev, 0, 1) ** 1.3 * 0.55)
     body = over(body, (0, 0, 0), np.clip(-bev, 0, 1) * 0.6)
     # green refraction at inner edges
     inner = np.clip(M * (1 - blur(M, 5 * s)) * 2.4, 0, 1)
     body = screen(body, GREEN, inner * 0.30)
     deep = M * (1 - blur(M, 40 * s))
-    body = screen(body, GREEN * 0.6, np.clip(deep * 1.2, 0, 1) * 0.10)
     # crisp rim light
     k = max(3, int(5 * s))
     er = ndi.grey_erosion(M, size=(k, k))
@@ -75,11 +72,9 @@ def render(M, bg=True, n=N):
     # curved specular gloss
     inside = np.hypot(xx - 0.5, yy + 0.55) < 1.18
     gloss = inside * (0.10 + 0.16 * np.clip(1 - (yy - 0.05) / 0.5, 0, 1) ** 1.5)
-    body = screen(body, (1, 1, 1), gloss * M)
     # diagonal glint streaks
     t = xx + yy * 0.55
     streak = np.exp(-((t - 0.62) / 0.02) ** 2) * 0.12 + np.exp(-((t - 0.69) / 0.006) ** 2) * 0.10
-    body = screen(body, (1, 1, 1), streak * M * np.clip(1.1 - yy, 0, 1))
     img = img * (1 - M[..., None]) + body * M[..., None]
     alpha = np.maximum(alpha, M)
     if bg:
