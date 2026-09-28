@@ -92,6 +92,36 @@ def save(img, alpha, path, size, rgba=False):
     im.resize((size, size), Image.LANCZOS).save(path, optimize=True)
 
 
+def rounded(img_path, size, out_path, fmt=None, sizes=None):
+    """Cut the icon into a smooth iOS-style squircle with transparent corners."""
+    ss = 4
+    n = size * ss
+    t = (np.arange(n) + 0.5) / n * 2 - 1
+    yy, xx = np.meshgrid(t, t, indexing='ij')
+    sq = (np.abs(xx) ** 5 + np.abs(yy) ** 5) ** (1 / 5)   # superellipse
+    mask = Image.fromarray(((sq <= 1) * 255).astype(np.uint8)).resize((size, size), Image.LANCZOS)
+    im = Image.open(img_path).convert('RGBA').resize((size, size), Image.LANCZOS)
+    im.putalpha(mask)
+    if fmt == 'ICO':
+        im.save(out_path, format='ICO', sizes=sizes)
+    else:
+        im.save(out_path, optimize=True)
+
+
+def web_icons(master, app_dir):
+    """Favicon / tab / search icons for the Next.js app directory."""
+    # favicon.ico: multi-size, rounded corners (tab + Google search)
+    big = os.path.join(app_dir, '_tmp_fav.png')
+    rounded(master, 256, big)
+    Image.open(big).save(os.path.join(app_dir, 'favicon.ico'), format='ICO',
+                         sizes=[(16, 16), (32, 32), (48, 48), (64, 64)])
+    os.remove(big)
+    rounded(master, 512, os.path.join(app_dir, 'icon.png'))
+    # iOS home screen rounds the corners itself and needs an opaque image
+    Image.open(master).convert('RGB').resize((180, 180), Image.LANCZOS).save(
+        os.path.join(app_dir, 'apple-icon.png'), optimize=True)
+
+
 if __name__ == '__main__':
     out = sys.argv[1]
     os.makedirs(out, exist_ok=True)
@@ -109,3 +139,5 @@ if __name__ == '__main__':
     save(fi, fa, f'{out}/android-adaptive-foreground-432.png', 432, rgba=True)
     bi, _ = render(np.zeros((N, N)))
     save(bi, None, f'{out}/android-adaptive-background-432.png', 432)
+    if len(sys.argv) > 2:
+        web_icons(f'{out}/icon-master-2048.png', sys.argv[2])
