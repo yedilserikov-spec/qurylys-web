@@ -131,7 +131,7 @@ if __name__ == '__main__':
     save(img, a, f'{out}/icon-master-2048.png', 2048)
     save(img, a, f'{out}/play-store-512.png', 512)
     # Android adaptive: glyph inside the 66/108 safe zone
-    k = 0.70
+    k = 0.58
     sz = int(N * k)
     small = np.asarray(Image.fromarray((M * 255).astype(np.uint8)).resize((sz, sz), Image.LANCZOS), float) / 255
     Ma = np.zeros((N, N)); o = (N - sz) // 2; Ma[o:o + sz, o:o + sz] = small
